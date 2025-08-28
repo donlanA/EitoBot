@@ -24,19 +24,19 @@ function parseInput(rplyToken, inputStr, guildFlag = false) {
   //底下是做為一個擲骰機器人的核心功能。
   //CoC7th系統的判定在此，關鍵字是「句首的cc」，在此的判定使用正則表達式。
   //用 / / 框起來的部分就是正則表達式的範圍， ^ 代表句首，所以 ^cc 就代表句首的cc。
-  if (inputStr.toLowerCase().match(/^cc/) != null) return CoC7th(rplyToken, inputStr.toLowerCase(), guildFlag);
+  if (inputStr.toLowerCase().match(/^\.cc/) != null) return CoC7th(rplyToken, inputStr.toLowerCase(), guildFlag);
   else
 
-    //pbta系統判定在此，關鍵字是「句首的pb」。
-    if (inputStr.toLowerCase().match(/^pb/) != null) return pbta(inputStr.toLowerCase());
+    //pbta
+    if (inputStr.toLowerCase().match(/^\.(pb)/) != null) return pbta(inputStr.toLowerCase());
     else
 
       //使用說明
-      if (inputStr.match('使用說明') != null) return TakumiManual();
+      if (inputStr.match('使用說明') != null) return EitoManual();
       else
 
         //聊天指令
-        if (inputStr.match('takumi') != null) return TakumiReply(inputStr, guildFlag);
+        if (inputStr.match('eito') != null || inputStr.match('aotsuki') != null) return EitoReply(inputStr, guildFlag);
         else
 
           //圖片訊息
@@ -52,7 +52,7 @@ function parseInput(rplyToken, inputStr, guildFlag = false) {
           //「不是全部都是空白或中文字，而且裡面含有d的訊息」都會觸發這個判定。
           //為了要正確運作，剩下的判定式還有很多，寫在這邊太冗長所以擺在nomalDiceRoller裡面了。
           //為什麼判定要放最後呢，不然只要有d都會被當成這個，很不方便
-          if (inputStr.match(/\w/) != null && inputStr.toLowerCase().match(/d/) != null) {
+          if (inputStr.toLowerCase().match(/^\./) != null  && inputStr.match(/\w/) != null && inputStr.toLowerCase().match(/d/) != null) {
             return nomalDiceRoller(inputStr);
           }
 
@@ -132,10 +132,12 @@ function nomalDiceRoller(inputStr) {
   //match這個函數本來就是用來把符合的部分摘取出來，那 \S 代表的是「句首的非空白字元」的意思。
   //所以 \S+ 就是句首的所有非空白字元，舉例來說就是 "Hello World!" 的話，他會從第一個字元一直抓到遇到空白為止，
   //因此會抓出 Hello 這個部份。
-  let mutiOrNot = inputStr.toLowerCase().match(/\S+/);
+  let mutiOrNot = inputStr.toLowerCase().match(/\S+/)[0];
 
-  //排除小數點，其實我也不知道為什麼不能用 '.' ，總之就是會報錯。
-  //注意 . 這個字元在正則表達式裡面有特殊意義，所以單指小數點的時候要加 \ ，變成 \.
+  // 如果有開頭的 "."，先拿掉
+  mutiOrNot = mutiOrNot.replace(/^\./, '');
+
+  // 如果還有 "." 存在，直接 return undefined
   if (mutiOrNot.toString().match(/\./) != null) return undefined;
 
   //把剛剛的第一個分段拉出來看，我們這裡設定的複數擲骰語法是這樣： 3 2d6+1
@@ -144,7 +146,7 @@ function nomalDiceRoller(inputStr) {
   //如果不是只有整數，就丟進去DiceCal裡面算算看。
   if (mutiOrNot.toString().match(/\D/) == null) {
     finalStr = '複數擲骰：'
-    if (mutiOrNot > 20) return '不支援20次以上的複數擲骰。這裡只有20顆骰子，所以……';
+    if (mutiOrNot > 20) return '不支援20次以上的複數擲骰。我也很想幫你，但是這裡只有20顆骰子呢。';
 
     //把第二部份分拆出來，丟進去待會要介紹的擲骰計算函數當中
     let DiceToRoll = inputStr.toLowerCase().split(' ', 2)[1];
@@ -154,8 +156,8 @@ function nomalDiceRoller(inputStr) {
       finalStr = finalStr + '\n' + i + '# ' + DiceCal(DiceToRoll).eqStr;
     }
     //報錯，不解釋。
-    if (finalStr.match('200D') != null) finalStr = '複數擲骰：\n等等，200D以上沒辦法啦！說到底什麼時候會骰到兩百次以上？';
-    if (finalStr.match('D500') != null) finalStr = '複數擲骰：\n不支援D1跟超過D500的擲骰……1根本不用骰嘛。500太多了啦。';
+    if (finalStr.match('200D') != null) finalStr = '複數擲骰：\n200d以上還是算了吧？你不會需要骰到兩百次以上的。';
+    if (finalStr.match('D500') != null) finalStr = '複數擲骰：\n不支援d1跟超過d500的擲骰。你真的有需要500面骰的場合嗎？';
 
   }
 
@@ -201,8 +203,8 @@ function DiceCal(inputStr) {
   //寫出算式，這裡使用while將所有「幾d幾」的骰子找出來，一個一個帶入RollDice並取代原有的部分
   while (DiceToRoll.match(/\d+d\d+/) != null) {
     let tempMatch = DiceToRoll.match(/\d+d\d+/);
-    if (tempMatch.toString().split('d')[0] > 200) return { eqStr: '等等，200D以上沒辦法啦！說到底什麼時候會骰到兩百次以上？' };
-    if (tempMatch.toString().split('d')[1] == 1 || tempMatch.toString().split('d')[1] > 500) return { eqStr: '不支援D1跟超過D500的擲骰……1根本不用骰嘛。500太多了啦。' };
+    if (tempMatch.toString().split('d')[0] > 200) return { eqStr: '200d以上還是算了吧？你不會需要骰到兩百次以上的。' };
+    if (tempMatch.toString().split('d')[1] == 1 || tempMatch.toString().split('d')[1] > 500) return { eqStr: '不支援d1跟超過d500的擲骰。你真的有需要500面骰的場合嗎？' };
     DiceToRoll = DiceToRoll.replace(/\d+d\d+/, RollDice(tempMatch));
   }
 
@@ -241,29 +243,31 @@ function RollDice(inputStr) {
 //PBTA判定
 function pbta(inputStr) {
 
-  //先把句首前面的一段拆出來，我不知道為什麼如果用 \S+ 會報錯，多半是變數種類的問題但我不太懂。
+  // 檢查是否以 .pb 開頭
+  if (!inputStr.toLowerCase().match(/^\.(pb)/)) return undefined;
+
+  //先把句首前面的一段拆出來
   let input = inputStr.toLowerCase().split(' ', 2)[0];
 
   //同樣先處理報錯，先確定pb後面只有加或減
-  if (input.match(/^pb[^+\-]/) != null ||
-    input.match(/[^0-9pb+\-]/) != null)
+  if (input.match(/^\.pb[^+\-]/) != null || input.match(/[^0-9pb+\-\.]/) != null)
     return undefined;
 
   //把pb去掉，留下後面的+-值，處理報錯
-  bonus = input.replace('pb', '');
+  bonus = input.replace('.pb', '');
   if (bonus != '' && bonus.match(/-\d|\+\d/) == null) return undefined;
 
   //開始算咯，你看我們用到DiceCal.eq了吧
   let CalStr = DiceCal('2d6' + bonus).eq;
 
   if (eval(CalStr.toString()) >= 10) {
-    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，成功！';
+    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，成功啦。';
   }
   else if (eval(CalStr.toString()) <= 6) {
-    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，失敗。';
+    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，失敗了呢。';
   }
   else {
-    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，部分成功。';
+    return 'pbta擲骰：\n' + CalStr + '=' + eval(CalStr.toString()) + '，部分成功哦。';
   }
 
 
@@ -470,15 +474,15 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
 
 
   //判斷是否為成長骰
-  if (inputStr.match(/^cc>\d+/) != null) {
+  if (inputStr.match(/^\.cc>\d+/) != null) {
     chack = parseInt(inputStr.split('>', 2)[1]);
     if (finalRoll > chack || finalRoll > 95) {
       let plus = Dice(10);
-      ReStr = 'CoC7th擲骰【技能成長】：\n(1D100>' + chack + ') → ' + finalRoll + ' → 成功成長' + plus + '點！\n最終值為：' + chack + '+' + plus + '=' + (chack + plus);
+      ReStr = 'CoC7th擲骰【技能成長】：\n(1D100>' + chack + ') → ' + finalRoll + ' → 成功成長' + plus + '點。\n最終值為：' + chack + '+' + plus + '=' + (chack + plus);
       return ReStr;
     }
     else if (finalRoll <= chack) {
-      ReStr = 'CoC7th擲骰【技能成長】：\n(1D100>' + chack + ') → ' + finalRoll + ' → 沒有成長！';
+      ReStr = 'CoC7th擲骰【技能成長】：\n(1D100>' + chack + ') → ' + finalRoll + ' → 沒有成長。';
       return ReStr;
     }
     else return undefined;
@@ -512,18 +516,18 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
   }
 
   //結果判定
-  if (finalRoll == 1) ReStr = ReStr + finalRoll + ' → 恭喜！大成功！';
+  if (finalRoll == 1) ReStr = ReStr + finalRoll + ' → 大成功哦！恭喜你。';
   else
-    if (finalRoll == 100) ReStr = ReStr + finalRoll + ' → 啊！大失敗！';
+    if (finalRoll == 100) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
     else
-      if (finalRoll <= 99 && finalRoll > 95 && chack < 50) ReStr = ReStr + finalRoll + ' → 啊！大失敗！';
+      if (finalRoll <= 99 && finalRoll > 95 && chack < 50) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
       else
-        if (finalRoll <= chack / 5) ReStr = ReStr + finalRoll + ' → 極限成功！';
+        if (finalRoll <= chack / 5) ReStr = ReStr + finalRoll + ' → 極限成功哦。';
         else
-          if (finalRoll <= chack / 2) ReStr = ReStr + finalRoll + ' → 困難成功！';
+          if (finalRoll <= chack / 2) ReStr = ReStr + finalRoll + ' → 困難成功哦。';
           else
-            if (finalRoll <= chack) ReStr = ReStr + finalRoll + ' → 通常成功！';
-            else ReStr = ReStr + finalRoll + ' → 失敗了……';
+            if (finalRoll <= chack) ReStr = ReStr + finalRoll + ' → 通常成功。';
+            else ReStr = ReStr + finalRoll + ' → 失敗了呢。';
 
   //浮動大失敗運算
   if (finalRoll <= 99 && finalRoll > 95 && chack >= 50) {
@@ -536,17 +540,17 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
   //傳送表情符號
   if (guildFlag) {
 
-    if (ReStr.match('恭喜！大成功！') != null) ReStr = ReStr + '\n<:TakumiyaSleep:1408877984105894001>';
+    if (ReStr.match('大成功哦！恭喜你。') != null) ReStr = ReStr + '\n<:TakotsukiSparkle:1409274012055502990> ';
     else
-      if (ReStr.match('啊！大失敗！') != null) ReStr = ReStr + '\n<:TakumiyaAngry:1407737950862577875>';
+      if (ReStr.match('哇，大失敗啊。') != null) ReStr = ReStr + '\n<:TakotsukiJelly:1408082300348010516>';
       else
-        if (ReStr.match('極限成功！') != null) ReStr = ReStr + '\n<:TakumiyaSandwitch:1407738773139226644>';
+        if (ReStr.match('極限成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
         else
-          if (ReStr.match('困難成功！') != null) ReStr = ReStr + '\n<:Takumiya:1409221651467468921>';
+          if (ReStr.match('困難成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
           else
-            if (ReStr.match('通常成功！') != null) ReStr = ReStr + '\n<:Takumiya:1409221651467468921>';
+            if (ReStr.match('通常成功。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835>';
             else
-              if (ReStr.match('失敗了……') != null) ReStr = ReStr + '\n<:TakumiyaCry:1407737942780416080>';
+              if (ReStr.match('失敗了呢。') != null) ReStr = ReStr + '\<:TakotsukiJelly:1408082300348010516>';
 
   }
 
@@ -588,21 +592,23 @@ function SendImg(rplyToken, inputStr) {
   return undefined;
 }
 
-function TakumiManual(guildFlag = false) {
+function EitoManual(guildFlag = false) {
   //一般功能說明
   let manual = '\
-    呃……嗨。因為這樣那樣的原因，總而言之，我現在就負責擲骰了。\
-    \n喊出骰子的個數、面數，我就會幫你丟出結果，大家應該都很熟悉了吧。\
-    \n修正也交給我吧，簡單的加減運算我還是有信心的！例如：2d4+1、2D10+1d2。\
-    \n需要多筆輸出的話，就先打次數再空一格打骰數。例如：7 3d6、5 2d6+6。\
-    \n對了，用大寫D或是小寫d都沒問題喔。 \
+    呀，是我哦。究竟是什麼情況，才會讓你們不得不放我出來……只為了負責擲骰呢？\
+    \n首先，我的通用擲骰需要在開頭打上「.」。例如：.1d6、.3d10。\
+    \n當然也能進行額外加減。例如：.2d4+1、.2d10+1d2。\
+    \n需要多筆輸出，就先打次數再空一格打骰數。例如：.7 3d6、.5 2d6+6。\
+    \n用大寫D或是小寫d都可以，我不介意哦。 \
     \n \
-    \n接下來，跟我聊天的指令是……「takumi」。有種似乎用了代稱又沒用的微妙感覺……\
-    \n總之，目前也支援多數CoC 7th指令，可打「takumi cc」取得更多說明。 \
-    \n初步支持pbta擲骰……這是什麼？不，沒事。語法為pb、pb+2。\
-    \n似乎還有一些額外功能，想知道的話就輸入「takumi 額外功能」吧。\
+    \n跟我聊天的指令是「eito」。還是你們只想叫我「aotsuki」呢？\
+    \n想怎麼稱呼都請隨意吧，我可沒有笨到聽不懂自己的姓氏。\
+    \n啊，但是沒事可以不要跟我搭話嗎？\
+    \n總之，我也知道不少CoC 7th指令，可打「eito cc」取得更多說明。 \
+    \n初步支持pbta擲骰，當然也要加上「.」。語法為.pb、.pb+2。\
+    \n還有一些額外功能，想知道就用「eito 額外功能」問我吧。\
     \n \
-    \n以上功能均繼承至RoboYabaso（HTKRPG的前身）！幫大忙了，謝謝！ \
+    \n以上功能均繼承至RoboYabaso（HTKRPG的前身），幫大忙了，謝謝。 \
     ';
 
   if (guildFlag) manual = manual + '\n<:Takumiya:1409221651467468921>';
@@ -610,19 +616,19 @@ function TakumiManual(guildFlag = false) {
   return manual;
 }
 
-function TakumiReply(inputStr, guildFlag = false) {
+function EitoReply(inputStr, guildFlag = false) {
 
   //功能說明
   if (inputStr.match('額外功能') != null) return '\
-    我看看喔……目前實裝的功能有以下這些：\
+    你真的問了啊。好，目前實裝的功能有以下這些：\
     \n \
     \n運勢：只要提到我的名字和[運勢]，我就會回答你的運勢。 \
-    \n隨機選擇：只要提到我的名字和[選、挑、決定]，然後空一格打選項。 \
-    \n選項之間也要用空格隔開，我就會幫你挑一個。\
+    \n隨機選擇：只要提到我的名字和[選、挑、決定]，空一格開始打選項，\
+    \n選項之間也用空格隔開。那麼，我就會幫你從中挑一個。\
     \n抽籤：只要提到我的名字和[抽籤]，我就會幫你從100個籤裡面抽一張。 \
     \n內容出自東京淺草寺一百籤，最後會附上參考資料網址。\
     \n \
-    \n話說這種事交給我沒問題嗎？感覺更適合讓蒼月來做啊……那傢伙的特異科目不是占卜嘛。\
+    \n這麼說來我的特異科目是占卜呢。或許我會對籤詩動手腳也說不定……哎呀，開玩笑的啦。\
     ';
   else
 
@@ -645,24 +651,24 @@ function TakumiReply(inputStr, guildFlag = false) {
       if (inputStr.match('選') != null || inputStr.match('決定') != null || inputStr.match('挑') != null) {
         let rplyArr = inputStr.split(' ');
 
-        if (rplyArr.length == 1) return '你好像還沒打完訊息的樣子？慢慢來也沒關係喔。';
+        if (rplyArr.length == 1) return '哈啊……你想讓我幫你決定什麼呢？';
 
         rplyArr.shift();
 
-        //20%機率不給答案
-        if (Dice(5) == 1) {
-          rplyArr = ['這個……你還是自己決定吧？',
-                     '人生是掌握在自己手裡的！……我的一位朋友曾經這麼說。',
-                     '總覺得沒有差很多……',
-                     '抱歉，我也不清楚……',
-                     '就算是我，也不想做這種選擇啊……',
-                     '不要把這種事交給我決定比較好吧。'];
+        //1/6機率不給答案
+        if (Dice(6) == 1) {
+          rplyArr = ['抱歉，現在不是想做選擇的心情呢。',
+                     '唔……我不太想回答這種問題。',
+                     '嗯……就選最普通的那個如何？反正差別也不大。',
+                     '這種小事，你隨便挑一個不就好了嗎？交給我反而浪費時間吧。',
+                     '咦？啊，我剛才沒聽清楚耶，抱歉。',
+                     '我沒什麼興趣，你還是自己決定吧。'];
           return rplyArr[Dice(rplyArr.length) - 1];
         }
 
-        let prefixArr = ['我想想喔……我覺得，',
-                         '這個嘛……那就，',
-                         '嗯……'];
+        let prefixArr = ['原來如此。',
+                         '那就，',
+                         '嗯，'];
 
         let suffixArr = ['吧。',
                          '好了。',
@@ -678,80 +684,74 @@ function TakumiReply(inputStr, guildFlag = false) {
   // 特定關鍵字回應
   let message = [
     {
-      chack: ['蒼月', '蒼月衛人'],
-      text: ['什麼，難道蒼月那傢伙又怎麼了嗎！？',
-             '蒼月那傢伙，真讓人頭痛……',
-             '蒼月他……應該不在這裡吧……？']
+      chack: ['拓海', '澄野拓海'],
+      text: ['哦，拓海同學也在這裡嗎？',
+             '拓海同學……？',
+             '拓海同學的指令不是我的名字哦。這點常識你應該知道吧？']
     },
     {
       chack: ['狗叫'],
-      text: ['不要。',
-             '不要！',
-             '……汪。',
-             '哈？',
-             '你、你說什麼？',
-             '……什麼？',
-             '不。',
-             '夠了！']
+      text: ['你以為我跟愚蠢的拓海同學一樣會聽你的指令嗎？',
+             '不要試了，我的回應沒有狗叫這個選項。',
+             '去找拓海同學吧，他會叫的。',
+             '……你是把我當什麼了？能不能別開這種低級玩笑呢。',
+             '……',
+             '……',
+             '……']
     },
     {
       chack: ['喵'],
-      text: ['喵喵。',
-             '喵？',
-             '喵！',
-             '喵。',
-             '玩夠了吧。',
-             '喵……',
-             '呼嚕呼嚕。',
-             '喵喵……']
-    },
-    {
-      chack: ['睡覺'],
-      text: ['可以休息了嗎？',
-             '我也想睡……',
-             '好。',
-             '晚安。']
-    },
-    {
-      chack: ['早安'],
-      text: ['早啊，昨晚有睡好嗎？',
-             '呼啊……早。',
-             '大家，早安啊！有沒有充滿幹勁啊——！？',
-             '早安，今天也要加油喔。',
-             '早安，吃過早餐了嗎？']
-    },
-    {
-      chack: ['午安'],
-      text: ['午安。今天過得如何？',
-             '嗯，午安。',
-             '午安。下午有想做的事嗎？',
-             '午安。有什麼需要幫忙的，隨時告訴我。']
-    },
-    {
-      chack: ['晚安'],
-      text: ['晚安，我也要去睡了。',
-             '晚安，有個好夢。',
-             '呼啊……晚安……',
-             '晚安，明天見。']
-    },
-    {
-      chack: ['唸一下那個'],
-      text: ['特防部隊！世界第一！永生不滅！所向無敵！風霜雨雪！絕不氣餒！特防部隊！曠世無匹！',
-             '特防隊是宇宙第一！永遠不滅的無敵部隊！無論遇見什麼都不會氣餒！特防隊是……最強的！',
-             '你的笑容有如太陽般燦爛，照亮了我的心靈……\n你的手有如花瓣，溫柔地包覆我的身體……\n令我心頭小鹿亂撞，如夢一般的時光……\n和你在一起時，我是多麼希望時間能就此停止……',
-             '是夢！這全部都是夢啊！啊哈哈哈哈！這是夢結局！一定是夢結局啦！',
-             '川奈……可以再幫我按摩穴道嗎……猛力地……按下去……',
-             '唔喔喔喔喔！這就是最後的防衛戰啊啊啊啊啊啊啊！',
-             '就像那懸掛在澄澈原野上空的蒼藍之月……一樣。']
+      text: ['這也是拓海同學的關鍵字吧？不要再找我了。',
+             '這樣做有什麼意義嗎？可以了，停下吧。',
+             '……你剛才有說話嗎？抱歉，你的聲音實在太刺耳了。']
     }
+    // {
+    //   chack: ['睡覺'],
+    //   text: ['可以休息了嗎？',
+    //          '我也想睡……',
+    //          '好。',
+    //          '晚安。']
+    // },
+    // {
+    //   chack: ['早安'],
+    //   text: ['早啊，昨晚有睡好嗎？',
+    //          '呼啊……早。',
+    //          '大家，早安啊！有沒有充滿幹勁啊——！？',
+    //          '早安，今天也要加油喔。',
+    //          '早安，吃過早餐了嗎？']
+    // },
+    // {
+    //   chack: ['午安'],
+    //   text: ['午安。今天過得如何？',
+    //          '嗯，午安。',
+    //          '午安。下午有想做的事嗎？',
+    //          '午安。有什麼需要幫忙的，隨時告訴我。']
+    // },
+    // {
+    //   chack: ['晚安'],
+    //   text: ['晚安，我也要去睡了。',
+    //          '晚安，有個好夢。',
+    //          '呼啊……晚安……',
+    //          '晚安，明天見。']
+    // },
+    // {
+    //   chack: ['唸一下那個'],
+    //   text: ['特防部隊！世界第一！永生不滅！所向無敵！風霜雨雪！絕不氣餒！特防部隊！曠世無匹！',
+    //          '特防隊是宇宙第一！永遠不滅的無敵部隊！無論遇見什麼都不會氣餒！特防隊是……最強的！',
+    //          '你的笑容有如太陽般燦爛，照亮了我的心靈……\n你的手有如花瓣，溫柔地包覆我的身體……\n令我心頭小鹿亂撞，如夢一般的時光……\n和你在一起時，我是多麼希望時間能就此停止……',
+    //          '是夢！這全部都是夢啊！啊哈哈哈哈！這是夢結局！一定是夢結局啦！',
+    //          '川奈……可以再幫我按摩穴道嗎……猛力地……按下去……',
+    //          '唔喔喔喔喔！這就是最後的防衛戰啊啊啊啊啊啊啊！',
+    //          '就像那懸掛在澄澈原野上空的蒼藍之月……一樣。']
+    // }
 
   ]
   // 加入表情符號
-  if (guildFlag) {
-    message[1].text.push('<:TakumiyaAngry:1407737950862577875>');
-    message[2].text.push('<:TakumiyaSandwitch:1407738773139226644>');
-    message[3].text.push('<:TakumiyaSleep:1408877984105894001>');
-  }
+  // if (guildFlag) {
+  //   message[1].text.push('<:TakumiyaAngry:1407737950862577875>');
+  //   message[2].text.push('<:TakumiyaSandwitch:1407738773139226644>');
+  //   message[3].text.push('<:TakumiyaSleep:1408877984105894001>');
+  // }
 
   // 檢查關鍵字
   for (i = 0; i < message.length; i++) {
@@ -765,20 +765,20 @@ function TakumiReply(inputStr, guildFlag = false) {
 
   //以下是運勢功能
   if (inputStr.match('運勢') != null) {
-    let rplyArr = ['超大吉', '大吉', '大吉', '中吉', '中吉', '中吉', '小吉', '小吉', '小吉', '小吉', '凶', '凶', '凶', '大凶', '大凶', '還、還是不要知道比較好'];
+    let rplyArr = ['超大吉', '大吉', '大吉', '中吉', '中吉', '中吉', '小吉', '小吉', '小吉', '小吉', '凶', '凶', '凶', '大凶', '大凶', '還是算了吧'];
     let Future = rplyArr[Dice(rplyArr.length) - 1];
 
     let command = '';
 
-    if (Future == '還、還是不要知道比較好') command = '保持現狀總比一整天都被影響心情更好嘛。';
-    else if (Future == '大凶') command = '別擔心，一切都會過去的！';
-    else if (Future == '凶') command = '嘛……總會有辦法的啦。';
-    else if (Future == '小吉') command = '只要是好運就沒問題啦。';
-    else if (Future == '中吉') command = '今天會是好運的一天喔！';
-    else if (Future == '大吉') command = '太好了，今天會是非常幸運的一天！';
-    else if (Future == '超大吉') command = '哇，好強！今天是你超級幸運的一天啊！';
+    if (Future == '還是算了吧') command = '要是醜陋的你對著我唉聲嘆氣，我會很困擾的……';
+    else if (Future == '大凶') command = '真是不走運呢。';
+    else if (Future == '凶') command = '唔……今天可能會有點倒楣呢。';
+    else if (Future == '小吉') command = '嗯，還算不錯吧。';
+    else if (Future == '中吉') command = '今天是個不錯的日子哦。';
+    else if (Future == '大吉') command = '恭喜，今天是你的幸運日哦！';
+    else if (Future == '超大吉') command = '這、這是……連我都必須承認你很幸運了呢，恭喜你～好好把握今天吧？';
 
-    return '你今天的運勢是——' + Future + '！\n' + command;
+    return '你今天的運勢是——' + Future + '。\n' + command;
   }
 
   // 以下是抽籤功能
@@ -786,7 +786,7 @@ function TakumiReply(inputStr, guildFlag = false) {
     const number = Dice(100);
     const result = lots[number];
     const lines = result.split("\n");
-    let rplyArr = [`你抽到的是——第 ${number} 籤！`];
+    let rplyArr = [`你抽到的是——第 ${number} 籤。是你想要的結果嗎？`];
     rplyArr.push('========================');
 
     lines.forEach((line, index) => {
@@ -811,16 +811,17 @@ function TakumiReply(inputStr, guildFlag = false) {
 
   //沒有觸發關鍵字則是這個
   else {
-    let rplyArr = ['在叫我嗎？',
-                   '我在這裡。',
-                   '我想回去睡覺了……',
-                   '怎麼了？',
-                   '……我可以走了嗎？',
-                   '我？需要幫忙嗎？',
-                   '好睏……',
-                   '哇！是骰子！骰子真有趣！',
-                   '（難道喊我的名字本身就很開心？）',
-                   '（又在叫我了……）'];
+    let rplyArr = ['你好呀。',
+                   '嗨，是我哦。',
+                   '嗯，我在哦。不需要一直叫，我也會隨時回應你的。',
+                   '……沒事就不要一直叫我。你還不明白嗎？',
+                   '嗯，怎麼了？光是叫名字可不算對話哦。',
+                   '哈啊……可以稍微安靜一段時間嗎？',
+                   '我很忙，所以能不能別隨便打擾我呢？',
+                   '需要幫忙的話，就把需求說清楚吧。',
+                   '名字的意義是讓人辨識，如果你重複太多次，它就失去作用了。',
+                   '我在這裡。要確認我沒有可疑的行為嗎？',
+                   '好了，名字叫夠了吧？不如告訴我你真正想說什麼。'];
     return rplyArr[Dice(rplyArr.length) - 1];
   }
 
