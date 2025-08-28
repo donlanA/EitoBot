@@ -611,7 +611,7 @@ function EitoManual(guildFlag = false) {
     \n以上功能均繼承至RoboYabaso（HTKRPG的前身），幫大忙了，謝謝。 \
     ';
 
-  if (guildFlag) manual = manual + '\n<:Takumiya:1409221651467468921>';
+  if (guildFlag) manual = manual + '\n<:Takotsuki:1407728958551752835>';
 
   return manual;
 }
