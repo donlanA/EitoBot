@@ -1,7 +1,7 @@
 {
-  "name": "takumi",
+  "name": "eito",
   "version": "0.2.0",
-  "description": "Takumi Dice Bot Based on RoboYabaso",
+  "description": "Eito Dice Bot Based on RoboYabaso",
   "engines": {
     "node": ">=16.9.0"
   },
@@ -16,7 +16,7 @@
     "express": "^4.21.2"
   },
   "keywords": [
-    "Takumi",
+    "Eito",
     "Line",
     "Discord"
   ],
