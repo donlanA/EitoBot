@@ -542,7 +542,7 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
 
     if (ReStr.match('大成功哦！恭喜你。') != null) ReStr = ReStr + '\n<:TakotsukiSparkle:1409274012055502990> ';
     else
-      if (ReStr.match('哇，大失敗啊。') != null) ReStr = ReStr + '\n<:TakotsukiJelly:1408082300348010516>';
+      if (ReStr.match('哇，大失敗啊。') != null) ReStr = ReStr + '\n<:TakotsukiComplete:1407737933531975791>';
       else
         if (ReStr.match('極限成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
         else
@@ -689,7 +689,8 @@ function EitoReply(inputStr, guildFlag = false) {
       chack: ['拓海', '澄野拓海'],
       text: ['哦，拓海同學也在這裡嗎？',
              '拓海同學……？',
-             '拓海同學的指令不是我的名字哦。這點常識你應該知道吧？']
+             '拓海同學的指令不是我的名字哦。這點常識你應該知道吧？',
+             '如果你要找拓海同學，他在這裡。takumi？']
     },
     {
       chack: ['狗叫'],
@@ -699,14 +700,15 @@ function EitoReply(inputStr, guildFlag = false) {
              '……你是把我當什麼了？能不能別開這種低級玩笑呢。',
              '……',
              '……',
-             '……',
-             '我來幫你吧。takumi狗叫。']
+             '我來幫你吧。takumi狗叫。',
+             '真是無論說幾次都聽不懂呢……我會幫你的，所以閉嘴吧。takumi狗叫。']
     },
     {
       chack: ['喵'],
       text: ['這也是拓海同學的關鍵字吧？不要再找我了。',
              '這樣做有什麼意義嗎？可以了，停下吧。',
-             '……你剛才有說話嗎？抱歉，你的聲音實在太刺耳了。']
+             '……你剛才有說話嗎？抱歉，你的聲音實在太刺耳了。',
+             '你找我只是為了說這個的話，還是不要浪費彼此的時間了吧？']
     },
     {
       chack: ['睡覺'],
@@ -720,7 +722,7 @@ function EitoReply(inputStr, guildFlag = false) {
              '早安呀。看到我乖乖站在這裡，有沒有很開心呢？',
              '早安。我開始有點懷念牢籠的生活了，至少不用一直和你們待在同個空間。',
              '早安哦。',
-             '早安，吃過早餐了嗎？']
+             '早安。既然你都特地來找我了，就讓拓海同學為你表演一下助助興吧。takumi，唸一下那個。']
     },
     {
       chack: ['午安'],
