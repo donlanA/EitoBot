@@ -1,7 +1,7 @@
 const lots = require("./lots.json");
 
 //以下是這個機器人在處理指令的核心。
-function parseInput(rplyToken, inputStr, guildFlag = false) {
+function parseInput(rplyToken, inputStr, guildFlag = false, userName = '') {
   //此處傳入的變數inputStr是大家輸入的文字訊息。
   //其實LineBot可以讀取的不只有文字訊息，貼圖、圖片等都可辨識。
   //但有看得懂上半段的程式碼的人可能會注意到，我們擋掉了其他的種類。只留文字訊息。
@@ -36,7 +36,7 @@ function parseInput(rplyToken, inputStr, guildFlag = false) {
       else
 
         //聊天指令
-        if (inputStr.match('eito') != null || inputStr.match('aotsuki') != null) return EitoReply(inputStr, guildFlag);
+        if (inputStr.match('eito') != null || inputStr.match('aotsuki') != null) return EitoReply(inputStr, guildFlag, userName);
         else
 
           //圖片訊息
@@ -52,7 +52,7 @@ function parseInput(rplyToken, inputStr, guildFlag = false) {
           //「不是全部都是空白或中文字，而且裡面含有d的訊息」都會觸發這個判定。
           //為了要正確運作，剩下的判定式還有很多，寫在這邊太冗長所以擺在nomalDiceRoller裡面了。
           //為什麼判定要放最後呢，不然只要有d都會被當成這個，很不方便
-          if (inputStr.toLowerCase().match(/^\./) != null  && inputStr.match(/\w/) != null && inputStr.toLowerCase().match(/d/) != null) {
+          if (inputStr.toLowerCase().match(/^\./) != null && inputStr.match(/\w/) != null && inputStr.toLowerCase().match(/d/) != null) {
             return nomalDiceRoller(inputStr);
           }
 
@@ -468,10 +468,8 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
   let firstRoll = TenRoll * 10 + OneRoll;
   if (firstRoll > 100) firstRoll = firstRoll - 100;
 
-
   //先設定最終結果等於第一次擲骰
   let finalRoll = firstRoll;
-
 
   //判斷是否為成長骰
   if (inputStr.match(/^\.cc>\d+/) != null) {
@@ -517,17 +515,12 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
 
   //結果判定
   if (finalRoll == 1) ReStr = ReStr + finalRoll + ' → 大成功哦！恭喜你。';
-  else
-    if (finalRoll == 100) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
-    else
-      if (finalRoll <= 99 && finalRoll > 95 && chack < 50) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
-      else
-        if (finalRoll <= chack / 5) ReStr = ReStr + finalRoll + ' → 極限成功哦。';
-        else
-          if (finalRoll <= chack / 2) ReStr = ReStr + finalRoll + ' → 困難成功哦。';
-          else
-            if (finalRoll <= chack) ReStr = ReStr + finalRoll + ' → 通常成功。';
-            else ReStr = ReStr + finalRoll + ' → 失敗了呢。';
+  else if (finalRoll == 100) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
+  else if (finalRoll <= 99 && finalRoll > 95 && chack < 50) ReStr = ReStr + finalRoll + ' → 哇，大失敗啊。';
+  else if (finalRoll <= chack / 5) ReStr = ReStr + finalRoll + ' → 極限成功哦。';
+  else if (finalRoll <= chack / 2) ReStr = ReStr + finalRoll + ' → 困難成功哦。';
+  else if (finalRoll <= chack) ReStr = ReStr + finalRoll + ' → 通常成功。';
+  else ReStr = ReStr + finalRoll + ' → 失敗了呢。';
 
   //浮動大失敗運算
   if (finalRoll <= 99 && finalRoll > 95 && chack >= 50) {
@@ -541,16 +534,11 @@ function CoC7th(rplyToken, inputStr, guildFlag = false) {
   if (guildFlag) {
 
     if (ReStr.match('大成功哦！恭喜你。') != null) ReStr = ReStr + '\n<:TakotsukiSparkle:1409274012055502990> ';
-    else
-      if (ReStr.match('哇，大失敗啊。') != null) ReStr = ReStr + '\n<:TakotsukiComplete:1407737933531975791>';
-      else
-        if (ReStr.match('極限成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
-        else
-          if (ReStr.match('困難成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
-          else
-            if (ReStr.match('通常成功。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835>';
-            else
-              if (ReStr.match('失敗了呢。') != null) ReStr = ReStr + '\<:TakotsukiJelly:1408082300348010516>';
+    else if (ReStr.match('哇，大失敗啊。') != null) ReStr = ReStr + '\n<:TakotsukiComplete:1407737933531975791>';
+    else if (ReStr.match('極限成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
+    else if (ReStr.match('困難成功哦。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835> ';
+    else if (ReStr.match('通常成功。') != null) ReStr = ReStr + '\n<:Takotsuki:1407728958551752835>';
+    else if (ReStr.match('失敗了呢。') != null) ReStr = ReStr + '\<:TakotsukiJelly:1408082300348010516>';
 
   }
 
@@ -616,10 +604,12 @@ function EitoManual(guildFlag = false) {
   return manual;
 }
 
-function EitoReply(inputStr, guildFlag = false) {
+function EitoReply(inputStr, guildFlag = false, userName = '') {
 
   //功能說明
-  if (inputStr.match('額外功能') != null) return '\
+  if (inputStr.match('額外功能') != null) {
+
+    return '\
     你真的問了啊。好，目前實裝的功能有以下這些：\
     \n \
     \n運勢：只要提到我的名字和[運勢]，我就會回答你的運勢。 \
@@ -630,10 +620,10 @@ function EitoReply(inputStr, guildFlag = false) {
     \n \
     \n這麼說來我的特異科目是占卜呢。或許我會對籤詩動手腳也說不定……哎呀，開玩笑的啦。\
     ';
-  else
 
-    //CC功能說明
-    if (inputStr.match('cc') != null) return '\
+  } else if (inputStr.match('cc') != null) {
+
+    return '\
       【CC功能說明】\
       \n \
       \n基礎指令：\
@@ -645,137 +635,42 @@ function EitoReply(inputStr, guildFlag = false) {
       \ncc 創角/crt [年齡]」：一鍵創角。\n若不加上年齡參數，則以悠子/冷嵐房規創角。若加上年齡，則以核心規則創角（含年齡調整）。\
       \ncc bg：娛樂性質居多的調查員背景產生器。\
       ';
-    else
 
-      //幫我選
-      if (inputStr.match('選') != null || inputStr.match('決定') != null || inputStr.match('挑') != null) {
-        let rplyArr = inputStr.split(' ');
+  } else if (inputStr.match('選') != null || inputStr.match('決定') != null || inputStr.match('挑') != null) {
 
-        if (rplyArr.length == 1) return '哈啊……你想讓我幫你決定什麼呢？';
+    let rplyArr = inputStr.split(' ');
+    if (rplyArr.length == 1) return '哈啊……你想讓我幫你決定什麼呢？';
+    rplyArr.shift();
 
-        rplyArr.shift();
-
-        //1/6機率不給答案
-        if (Dice(6) == 1) {
-          rplyArr = ['抱歉，現在不是想做選擇的心情呢。',
-                     '唔……我不太想回答這種問題。',
-                     '嗯……就選最普通的那個如何？反正差別也不大。',
-                     '這種小事，你隨便挑一個不就好了嗎？交給我反而浪費時間吧。',
-                     '咦？啊，我剛才沒聽清楚耶，抱歉。',
-                     '我沒什麼興趣，你還是自己決定吧。'];
-          return rplyArr[Dice(rplyArr.length) - 1];
-        }
-
-        let prefixArr = ['原來如此。',
-                         '那就，',
-                         '嗯，',
-                         '哦，'];
-
-        let suffixArr = ['吧。',
-                         '好了。',
-                         '怎麼樣？',
-                         '如何？'];
-
-        let prefix = prefixArr[Dice(prefixArr.length) - 1];
-        let Answer = rplyArr[Dice(rplyArr.length) - 1];
-        let suffix = suffixArr[Dice(suffixArr.length) - 1];
-
-        return prefix + Answer + suffix;
-      }
-
-  // 特定關鍵字回應
-  let message = [
-    {
-      chack: ['拓海', '澄野拓海'],
-      text: ['哦，拓海同學也在這裡嗎？',
-             '拓海同學……？',
-             '拓海同學的指令不是我的名字哦。這點常識你應該知道吧？',
-             '如果你要找拓海同學，他在這裡。takumi？']
-    },
-    {
-      chack: ['狗叫'],
-      text: ['你以為我跟愚蠢的拓海同學一樣會聽你的指令嗎？',
-             '不要試了，我的回應沒有狗叫這個選項。',
-             '去找拓海同學吧，他會叫的。',
-             '……你是把我當什麼了？能不能別開這種低級玩笑呢。',
-             '……',
-             '……',
-             '我來幫你吧。takumi狗叫。',
-             '真是無論說幾次都聽不懂呢……我會幫你的，所以閉嘴吧。takumi狗叫。']
-    },
-    {
-      chack: ['喵'],
-      text: ['這也是拓海同學的關鍵字吧？不要再找我了。',
-             '這樣做有什麼意義嗎？可以了，停下吧。',
-             '……你剛才有說話嗎？抱歉，你的聲音實在太刺耳了。',
-             '你找我只是為了說這個的話，還是不要浪費彼此的時間了吧？']
-    },
-    {
-      chack: ['睡覺'],
-      text: ['這是叫我去休息的意思嗎？我會自己回籠子的，放心吧。',
-             '不需要你提醒我也會做的。',
-             '嗯，我大概還會再待晚一點吧。']
-    },
-    {
-      chack: ['早安'],
-      text: ['早安。一大早就看見醜陋的你們，真是令人沮喪啊。',
-             '早安呀。看到我乖乖站在這裡，有沒有很開心呢？',
-             '早安。我開始有點懷念牢籠的生活了，至少不用一直和你們待在同個空間。',
-             '早安哦。',
-             '早。既然你都特地來找我了，就讓拓海同學為你表演一下助助興吧。takumi，唸一下那個。']
-    },
-    {
-      chack: ['午安'],
-      text: ['午安。如果你能改向別人搭話，我會很開心的。',
-             '嗯，午安。',
-             '不需要特地跟我說午安也沒關係哦。',
-             '午安呀，散發惡臭的同學。\n因為你的關係，我現在得換個地方吃午餐了，所以暫時再見啦。']
-    },
-    {
-      chack: ['晚安'],
-      text: ['嗯。',
-             '我想，我們也沒有熟到會互道晚安的程度吧？',
-             '嗯，再見。',
-             '明天見，醜陋的同學。']
-    },
-    {
-      chack: ['唸一下那個'],
-      text: ['在最後的最後，我還是覺得你……非常討厭非常討厭非常討厭……\n但又……最喜歡你了。',
-             '無法見證你們的結局，我雖然很遺憾，但我期盼你們能獲得勝利。\n不……不對。\n我打從心底……希望你們能獲得幸福。',
-             '拓海！拓海！',
-             '那只是個契機！我喜歡上拓海同學是我自己願意！',
-             '我愛你，拓海同學……我會一直一直愛著你喔，拓海同學……',
-             '嗨，各位！應該說……初次見面嗎？我是蒼月衛人。\n能成為特防隊的一員，我打從心底感到很榮幸。\n我想，各位至今為止，都度過了每日艱辛戰鬥的日子。\n但是，各位知道嗎？黎明前的夜晚……是最黑暗的。\n讓我們一起將這次的危機，化為轉機吧！\n我為人人！人人為我！\n今後也請多指教了！Love & Peace！',
-             '在煙火的映照下，我們兩個男生彼此吐露心聲……我想這種關係，能稱得上是「死黨」吧。',
-             '必須由我親手殺掉拓海同學才行啊！！',
-             '再見了，拓海同學……\n能和你互相殘殺……是我這一生中……唯一的樂趣啊。',
-             '現在這個瞬間……就是只屬於你我之間的世界啊！！',
-             '雖然我無法辨識物理性的外觀是否相似……但我們彼此相似的，或許是靈魂的型態吧。',
-             '拓海同學。再次麻煩你多多指教了。今後我們要一直在一起喔？……永遠喔。',
-             '我不可能允許你這麼做。雖然我的意識會消失……但你必須被「我」給刺死。\n直到最後一刻，你都必須看著我的臉而死。',
-             '就像那懸掛在澄澈原野上空的蒼藍之月……一樣。']
+    //1/6機率不給答案
+    if (Dice(6) == 1) {
+      rplyArr = ['抱歉，現在不是想做選擇的心情呢。',
+                '唔……我不太想回答這種問題。',
+                '嗯……就選最普通的那個如何？反正差別也不大。',
+                '這種小事，你隨便挑一個不就好了嗎？交給我反而浪費時間吧。',
+                '咦？啊，我剛才沒聽清楚耶，抱歉。',
+                '我沒什麼興趣，你還是自己決定吧。'];
+      return rplyArr[Dice(rplyArr.length) - 1];
     }
 
-  ]
-  // 加入表情符號
-  // if (guildFlag) {
-  //   message[1].text.push('<:TakumiyaAngry:1407737950862577875>');
-  //   message[2].text.push('<:TakumiyaSandwitch:1407738773139226644>');
-  //   message[3].text.push('<:TakumiyaSleep:1408877984105894001>');
-  // }
+    let prefixArr = ['原來如此。',
+                    '那就，',
+                    '嗯，',
+                    '哦，'];
 
-  // 檢查關鍵字
-  for (i = 0; i < message.length; i++) {
-    for (j = 0; j < message[i].chack.length; j++) {
-      if (inputStr.toLowerCase().match(message[i].chack[j]) != null) {
-        return message[i].text[Dice(message[i].text.length) - 1];
-      }
-    }
+    let suffixArr = ['吧。',
+                    '好了。',
+                    '怎麼樣？',
+                    '如何？'];
 
-  }
+    let prefix = prefixArr[Dice(prefixArr.length) - 1];
+    let Answer = rplyArr[Dice(rplyArr.length) - 1];
+    let suffix = suffixArr[Dice(suffixArr.length) - 1];
 
-  //以下是運勢功能
-  if (inputStr.match('運勢') != null) {
+    return prefix + Answer + suffix;
+
+  } else if (inputStr.match('運勢') != null) {
+
     let rplyArr = ['超大吉', '大吉', '大吉', '中吉', '中吉', '中吉', '小吉', '小吉', '小吉', '小吉', '凶', '凶', '凶', '大凶', '大凶', '還是算了吧'];
     let Future = rplyArr[Dice(rplyArr.length) - 1];
 
@@ -790,10 +685,9 @@ function EitoReply(inputStr, guildFlag = false) {
     else if (Future == '超大吉') command = '這、這是……連我都必須承認你很幸運了呢，恭喜你～好好把握今天吧？';
 
     return '你今天的運勢是——' + Future + '。\n' + command;
-  }
 
-  // 以下是抽籤功能
-  if (inputStr.match('抽籤') != null) {
+  } else if (inputStr.match('抽籤') != null) {
+
     const number = Dice(100);
     const result = lots[number];
     const lines = result.split("\n");
@@ -820,22 +714,119 @@ function EitoReply(inputStr, guildFlag = false) {
     return rplyArr.join("\n");
   }
 
-  //沒有觸發關鍵字則是這個
-  else {
-    let rplyArr = ['你好呀。',
-                   '嗨，是我哦。',
-                   '嗯，我在哦。不需要一直叫，我也會隨時回應你的。',
-                   '……沒事就不要一直叫我。你還不明白嗎？',
-                   '嗯，怎麼了？光是叫名字可不算對話哦。',
-                   '哈啊……可以稍微安靜一段時間嗎？',
-                   '啊啊……醜陋的人類……',
-                   '我很忙，所以能不能別隨便打擾我呢？',
-                   '需要幫忙的話，就把需求說清楚吧。',
-                   '名字的意義是讓人辨識，如果你重複太多次，它就失去作用了。',
-                   '我在這裡。要確認我有沒有可疑的行為嗎？',
-                   '好了，名字叫夠了吧？不如告訴我你真正想說什麼。'];
-    return rplyArr[Dice(rplyArr.length) - 1];
+  // 特定關鍵字回應
+  let message = [
+    {
+      chack: ['拓海', '澄野拓海'],
+      text: ['哦，拓海同學也在這裡嗎？',
+        '拓海同學……？',
+        '拓海同學的指令不是我的名字哦。這點常識你應該知道吧？',
+        '如果你要找拓海同學，他在這裡。takumi？']
+    },
+    {
+      chack: ['狗叫'],
+      text: ['你以為我跟愚蠢的拓海同學一樣會聽你的指令嗎？',
+        '不要試了，我的回應沒有狗叫這個選項。',
+        '去找拓海同學吧，他會叫的。',
+        '……你是把我當什麼了？能不能別開這種低級玩笑呢。',
+        '……',
+        '……',
+        '我來幫你吧。takumi狗叫。',
+        '真是無論說幾次都聽不懂呢……我會幫你的，所以閉嘴吧。takumi狗叫。']
+    },
+    {
+      chack: ['喵'],
+      text: ['這也是拓海同學的關鍵字吧？不要再找我了。',
+        '這樣做有什麼意義嗎？可以了，停下吧。',
+        '……你剛才有說話嗎？抱歉，你的聲音實在太刺耳了。',
+        '你找我只是為了說這個的話，還是不要浪費彼此的時間了吧？']
+    },
+    {
+      chack: ['睡覺'],
+      text: ['這是叫我去休息的意思嗎？我會自己回籠子的，放心吧。',
+        '不需要你提醒我也會做的。',
+        '嗯，我大概還會再待晚一點吧。']
+    },
+    {
+      chack: ['早安'],
+      text: ['早安。一大早就看見醜陋的你們，真是令人沮喪啊。',
+        '早安呀。看到我乖乖站在這裡，有沒有很開心呢？',
+        '早安。我開始有點懷念牢籠的生活了，至少不用一直和你們待在同個空間。',
+        '早安哦。',
+        '早。既然你都特地來找我了，就讓拓海同學為你表演一下助助興吧。takumi，唸一下那個。']
+    },
+    {
+      chack: ['午安'],
+      text: ['午安。如果你能改向別人搭話，我會很開心的。',
+        '嗯，午安。',
+        '不需要特地跟我說午安也沒關係哦。',
+        '午安呀，散發惡臭的同學。\n因為你的關係，我現在得換個地方吃午餐了，所以暫時再見啦。']
+    },
+    {
+      chack: ['晚安'],
+      text: ['嗯。',
+        '我想，我們也沒有熟到會互道晚安的程度吧？',
+        '嗯，再見。',
+        '明天見，醜陋的同學。']
+    },
+    {
+      chack: ['一下那個'],
+      text: ['在最後的最後，我還是覺得你……非常討厭非常討厭非常討厭……\n但又……最喜歡你了。',
+        '無法見證你們的結局，我雖然很遺憾，但我期盼你們能獲得勝利。\n不……不對。\n我打從心底……希望你們能獲得幸福。',
+        '拓海！拓海！',
+        '那只是個契機！我喜歡上拓海同學是我自己願意！',
+        '我愛你，拓海同學……我會一直一直愛著你喔，拓海同學……',
+        '嗨，各位！應該說……初次見面嗎？我是蒼月衛人。\n能成為特防隊的一員，我打從心底感到很榮幸。\n我想，各位至今為止，都度過了每日艱辛戰鬥的日子。\n但是，各位知道嗎？黎明前的夜晚……是最黑暗的。\n讓我們一起將這次的危機，化為轉機吧！\n我為人人！人人為我！\n今後也請多指教了！Love & Peace！',
+        '在煙火的映照下，我們兩個男生彼此吐露心聲……我想這種關係，能稱得上是「死黨」吧。',
+        '必須由我親手殺掉拓海同學才行啊！！',
+        '再見了，拓海同學……\n能和你互相殘殺……是我這一生中……唯一的樂趣啊。',
+        '現在這個瞬間……就是只屬於你我之間的世界啊！！',
+        '雖然我無法辨識物理性的外觀是否相似……但我們彼此相似的，或許是靈魂的型態吧。',
+        '拓海同學。再次麻煩你多多指教了。今後我們要一直在一起喔？……永遠喔。',
+        '我不可能允許你這麼做。雖然我的意識會消失……但你必須被「我」給刺死。\n直到最後一刻，你都必須看著我的臉而死。',
+        '就像那懸掛在澄澈原野上空的蒼藍之月……一樣。']
+    },
+    {
+      chack: ['我生日', '我的生日'],
+      text:['生日快樂，{userName}同學。雖然我其實對人類的生日沒有什麼感情，不過既然拓海同學要我說，那我就給你一個最誠懇的祝福吧。願你在新的一年裡，少一點愚蠢，多一點利用價值，至少別讓自己那副醜惡的樣子更礙眼了。',
+        '{userName}同學，生日快樂。雖然我根本沒什麼興趣，但既然是拓海同學要求的，我就破例一次吧。希望你在未來能夠少點麻煩，這樣至少能減輕拓海同學的煩惱。',
+        '生日快樂，{userName}同學。老實說，要不是拓海同學要求，我根本懶得開口。你應該好好感謝拓海同學，畢竟這份祝福是因他而存在，不是因你。',
+        '生日快樂啊，親愛的{userName}同學！今天是屬於你的黎明之日，宛如燃燒的太陽高掛天際，照亮你即將踏上的道路。願你揮散一切陰霾，將未來化為屬於自己的勝利舞台！……好了，夠誠摯了吧？'
+      ]
+    }
+
+  ]
+  // 加入表情符號
+  // if (guildFlag) {
+  //   message[1].text.push('<:TakumiyaAngry:1407737950862577875>');
+  //   message[2].text.push('<:TakumiyaSandwitch:1407738773139226644>');
+  //   message[3].text.push('<:TakumiyaSleep:1408877984105894001>');
+  // }
+
+  // 檢查關鍵字
+  for (i = 0; i < message.length; i++) {
+    for (j = 0; j < message[i].chack.length; j++) {
+      if (inputStr.toLowerCase().match(message[i].chack[j]) != null) {
+        return message[i].text[Dice(message[i].text.length) - 1].replace('{userName}', userName);
+      }
+    }
   }
+
+  //沒有觸發關鍵字則是這個
+
+  let rplyArr = ['你好呀。',
+    '嗨，是我哦。',
+    '嗯，我在哦。不需要一直叫，我也會隨時回應你的。',
+    '……沒事就不要一直叫我。你還不明白嗎？',
+    '嗯，怎麼了？光是叫名字可不算對話哦。',
+    '哈啊……可以稍微安靜一段時間嗎？',
+    '啊啊……醜陋的人類……',
+    '我很忙，所以能不能別隨便打擾我呢？',
+    '需要幫忙的話，就把需求說清楚吧。',
+    '名字的意義是讓人辨識，如果你重複太多次，它就失去作用了。',
+    '我在這裡。要確認我有沒有可疑的行為嗎？',
+    '好了，名字叫夠了吧？不如告訴我你真正想說什麼。'];
+  return rplyArr[Dice(rplyArr.length) - 1];
 
 }
 
